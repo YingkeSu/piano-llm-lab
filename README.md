@@ -1,69 +1,79 @@
-# Piano-LLM-Lab V1
+# Piano-LLM-Lab (Non-LLM Complete)
 
-Piano-LLM-Lab is a local reproduction of an online piano experience with engineering-ready architecture.
+Piano-LLM-Lab is now a local fullstack monorepo delivering the non-LLM scope:
 
-## Features
+- Piano page (`/`) with 88-key play, MIDI import/playback/seek, recorder replay/export, comments, keymap profile management.
+- Metronome page (`/metronome`) with BPM/time-signature/accent controls.
+- Backend auth + session + CSRF + comments API powered by SQLite.
+- LLM interfaces are preserved as extension points only (no real model integration).
 
-- 88-key piano layout with mouse/touch/PC keyboard input.
-- WebAudio playback with dual mode:
-  - `synth` mode (always available).
-  - `soundfont` mode with automatic fallback to synth on load failure.
-- MIDI import and playback (`.mid`, `.midi`).
-- Performance recording and replay.
-- XMID custom format export/import (`!xmid`, `v:1`, `m:`, `b:`).
-- Settings persistence via `localStorage`.
-- Web MIDI device connection (if browser supports it).
-- LLM extension entrypoint with `NoopCoachPlugin`.
+## Monorepo Layout
 
-## Tech Stack
+- `apps/web`: Vue 3 + Vite frontend
+- `apps/api`: Express + SQLite backend
+- `packages/shared-types`: shared DTO/types
 
-- Vue 3 + TypeScript + Vite
-- Pinia
-- WebAudio API
-- `@tonejs/midi`
-- Vitest + ESLint + Prettier
+## Requirements
 
-## Getting Started
+- Node 22+ (see `.nvmrc`)
+- npm 10+
+
+## Quick Start
 
 ```bash
 npm install
-npm run dev
+npm run dev:all
 ```
 
-Open `http://localhost:5173`.
+- Web: [http://localhost:5173](http://localhost:5173)
+- API: [http://localhost:8787](http://localhost:8787)
 
-## Commands
+## Scripts
 
 ```bash
-npm run dev
-npm run build
-npm run test
-npm run lint
-npm run format
+npm run dev:all      # start api + web
+npm run dev:web
+npm run dev:api
+npm run lint:all
+npm run test:all
+npm run build:all
+npm run test:e2e
 ```
 
-## Project Structure
+## API Summary
 
-- `src/app`: runtime orchestration
-- `src/domain/piano`: note mapping, key layout, shared types
-- `src/domain/audio`: `AudioEngine` implementation
-- `src/domain/input`: keyboard/touch/midi adapters + input manager
-- `src/domain/midi`: MIDI parser and scheduler
-- `src/domain/recording`: recorder and XMID codec
-- `src/store`: persisted settings store
-- `src/components`: UI components
-- `src/llm`: plugin interface and noop coach
-- `tests`: unit tests
+- `GET /api/health`
+- `GET /api/csrf`
+- `GET /api/auth/me`
+- `POST /api/auth/register`
+- `POST /api/auth/login`
+- `POST /api/auth/logout`
+- `POST /api/pinlun/list`
+- `POST /api/pinlun/publish`
+- `POST /api/pinlun/del`
 
-## LLM Extension (V1 scope)
+All write APIs require session + `_csrf`.
 
-V1 only provides extension points.
+## Data Persistence
 
-- Interface: `LlmCoachPlugin`
-- Default plugin: `NoopCoachPlugin`
-- Next step: implement real API-backed coach in `src/llm`.
+- Backend: SQLite database in `apps/api/data/piano.db`
+- Session: SQLite-backed session store in `apps/api/data/sessions.db`
+- Frontend settings/keymaps/recording history: browser localStorage
 
-## Notes
+## Soundfont Local-First
 
-- If browser blocks audio autoplay, click `Init Audio` before playing.
-- If soundfont loading fails, runtime automatically falls back to synth mode.
+Frontend tries local static soundfont first:
+
+- Directory: `apps/web/public/soundfonts`
+- Pattern: `<instrument>-MusyngKite.js`
+
+If unavailable, it falls back to remote soundfont, and finally to synth mode.
+
+## Testing
+
+- Unit tests (Vitest): core piano/input/midi/xmid/xkmp + API auth/comments
+- E2E tests (Playwright): auth/comments, MIDI+record flow, metronome flow
+
+## LLM Extension
+
+LLM-related types/plugins remain in `apps/web/src/llm`, currently with noop implementation only.
